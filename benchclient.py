@@ -25,7 +25,7 @@ define('timeout', type=float, default=1.0, help='request timeout')
 define('follow_redirects', type=bool, default=True, help='request follow redirects')
 define('validate_cert', type=bool, default=True, help='request validate cert')
 define('urls_file', help='request urls file')
-define('urls_template', help='request urls template, if not "", build with values in urls_file')
+define('url_template', help='request url template, if not "", build with values in urls_file')
 define('log_info_format', help='info log format')
 define('log_warning_format', help='warning log format')
 define('log_error_format', help='error log format')
@@ -72,6 +72,8 @@ class BenchClient(object):
 
     def _on_response(self, response):
         if time.time() > self.end:
+            if options.use_curl:
+                self._client.close()
             self._io_loop.stop()
             return
 

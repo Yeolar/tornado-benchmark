@@ -12,14 +12,13 @@ import logging
 from tornado import ioloop
 from tornado import httpclient
 from tornado import process
-
-# use a modified options based on tornado's options
-from options import define, options, parse_command_line, parse_config_file
+from tornado.options import (define, options,
+        parse_command_line, parse_config_file)
 
 
 define('use_curl', type=bool, default=False, help='use pycurl as AsyncHTTPClient backend')
 define('max_clients', type=int, default=10, help='max concurrent clients')
-define('timeout', type=float, default=1.0, help='request timeout')
+define('timeout', type=float, default=5.0, help='request timeout')
 define('retry_times', type=int, default=3, help='retry times')
 define('follow_redirects', type=bool, default=True, help='request follow redirects')
 define('validate_cert', type=bool, default=True, help='request validate cert')
@@ -45,13 +44,17 @@ class Entry(object):
 
     def check_response(self, response):
         if response.error:
-            self.error = response.error
+            self.error = 'error:[%s]' % response.error
             return
 
+        self.error = ''
         if self.code != response.code:
-            self.error += 'Error:[unmatch code:%d' % response.code
+            self.error = 'error:[unmatch code:%d' % response.code
         if self.keyword and self.keyword not in response.body:
-            self.error += ', keyword not found'
+            if self.error:
+                self.error += ', keyword not found'
+            else:
+                self.error = 'error:[keyword not found'
         if self.error:
             self.error += ']'
 
@@ -77,6 +80,7 @@ class Checker(object):
         self.timeout = timeout
         self.max_clients = max_clients
         self.requests = dict([(self.get_request(e), e) for e in entries])
+        self.count = len(self.requests)
 
     def get_request(self, entry):
         return httpclient.HTTPRequest(entry.url,
@@ -91,21 +95,27 @@ class Checker(object):
         self._io_loop.start()
 
     def _on_response(self, response):
-        if len(self._client.active) == 0:
-            self._io_loop.stop()
+        self.count -= 1
+
         request = response.request
         entry = self.requests[request]
         entry.check_response(response)
 
         if entry.error:
             if entry.retry_no < entry.retry_times:
-                self.requests[request].retry_no += 1
                 self.log('warning', entry, response)
+                self.requests[request].retry_no += 1
+                self.count += 1
                 self._client.fetch(request, self._on_response)
             else:
                 self.log('error', entry, response)
         else:
             self.log('info', entry, response)
+
+        if self.count == 0:
+            if options.use_curl:
+                self._client.close()
+            self._io_loop.stop()
 
     def log(self, level, entry, response):
         getattr(logging, level)(options.checker_log_format,
