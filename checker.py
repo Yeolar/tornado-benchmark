@@ -30,6 +30,9 @@ parse_config_file('settings.py')
 if options.use_curl:
     httpclient.AsyncHTTPClient.configure(
             'tornado.curl_httpclient.CurlAsyncHTTPClient')
+else:
+    httpclient.AsyncHTTPClient.configure(
+            'simple_httpclient.SimpleAsyncHTTPClient')
 
 
 class Entry(object):
