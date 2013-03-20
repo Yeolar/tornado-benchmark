@@ -15,6 +15,8 @@ from tornado import process
 from tornado.options import (define, options,
         parse_command_line, parse_config_file)
 
+from utils import setup_settings
+
 
 define('use_curl', type=bool, default=False, help='use pycurl as AsyncHTTPClient backend')
 define('max_clients', type=int, default=10, help='max concurrent clients')
@@ -25,14 +27,14 @@ define('validate_cert', type=bool, default=True, help='request validate cert')
 define('checker_log_format', help='log format')
 
 urls_files = parse_command_line()
-parse_config_file('settings.py')
+parse_config_file(setup_settings())
 
 if options.use_curl:
     httpclient.AsyncHTTPClient.configure(
             'tornado.curl_httpclient.CurlAsyncHTTPClient')
 else:
     httpclient.AsyncHTTPClient.configure(
-            'simple_httpclient.SimpleAsyncHTTPClient')
+            'torbench.simple_httpclient.SimpleAsyncHTTPClient')
 
 
 class Entry(object):

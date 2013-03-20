@@ -11,9 +11,15 @@ from datetime import datetime, timedelta
 import logging
 
 from tornado import process
-import matplotlib.pyplot as plt
-from matplotlib import rcParams
+try:
+    import matplotlib.pyplot as plt
+    from matplotlib import rcParams
 
+    rcParams['savefig.dpi'] = options.dpi
+except ImportError:
+    plt = None
+
+from utils import setup_settings
 from options import define, options, parse_command_line, parse_config_file
 
 
@@ -23,10 +29,8 @@ define('dpi', type=int, default=72, help='figure DPI')
 define('figure_file', default='log.png', help='figure file')
 
 log_files = parse_command_line()
-parse_config_file('settings.py')
+parse_config_file(setup_settings())
 
-
-rcParams['savefig.dpi'] = options.dpi
 
 REGEX = re.compile(r'\[(?P<level>[IWE]) (?P<date>\d+) (?P<time>[\d:\.]+)'
                    r' (?P<file>\w+):(?P<lineno>\d+)\]'
@@ -124,6 +128,10 @@ class LogAnalyzer(object):
 
 
 def main():
+    if not len(log_files):
+        print 'please specified log files.'
+        sys.exit(0)
+
     process_num = {
         -1: 1,
         0: process.cpu_count(),
@@ -138,7 +146,8 @@ def main():
 
     la.run()
     la.print_stat()
-    la.draw_figure(options.figure_file)
+    if plt:
+        la.draw_figure(options.figure_file)
 
 
 if __name__ == '__main__':

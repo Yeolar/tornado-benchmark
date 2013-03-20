@@ -13,6 +13,7 @@ from tornado import ioloop
 from tornado import httpclient
 from tornado import process
 
+from utils import setup_settings
 # use a modified options based on tornado's options
 from options import define, options, parse_command_line, parse_config_file
 
@@ -31,14 +32,14 @@ define('log_warning_format', help='warning log format')
 define('log_error_format', help='error log format')
 
 requests = parse_command_line()
-parse_config_file('settings.py')
+parse_config_file(setup_settings())
 
 if options.use_curl:
     httpclient.AsyncHTTPClient.configure(
             'tornado.curl_httpclient.CurlAsyncHTTPClient')
 else:
     httpclient.AsyncHTTPClient.configure(
-            'simple_httpclient.SimpleAsyncHTTPClient')
+            'torbench.simple_httpclient.SimpleAsyncHTTPClient')
 
 
 class BenchClient(object):
