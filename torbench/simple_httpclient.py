@@ -434,7 +434,6 @@ class _HTTPConnection(object):
                                 request_time=time.time() - self.start_time,
                                 buffer=buffer,
                                 effective_url=self.request.url)
-        print response.error
         self._run_callback(response)
         self.stream.close()
 

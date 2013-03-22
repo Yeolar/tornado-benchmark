@@ -21,9 +21,9 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'torbench = torbench.benchclient:main',
-            'toranalyzer = torbench.analyzer:main',
-            'torchecker = torbench.checker:main',
+            'tor-bench = torbench.benchclient:main',
+            'tor-analyzer = torbench.analyzer:main',
+            'tor-checker = torbench.checker:main',
         ]
     },
 )
