@@ -8,6 +8,7 @@ import sys
 import time
 import random
 import logging
+import urlparse
 
 from tornado import ioloop
 from tornado import httpclient
@@ -21,6 +22,7 @@ from utils import setup_settings
 define('use_curl', type=bool, default=False, help='use pycurl as AsyncHTTPClient backend')
 define('max_clients', type=int, default=10, help='max concurrent clients')
 define('timeout', type=float, default=5.0, help='request timeout')
+define('host', default='http://localhost', help='host')
 define('retry_times', type=int, default=3, help='retry times')
 define('follow_redirects', type=bool, default=True, help='request follow redirects')
 define('validate_cert', type=bool, default=True, help='request validate cert')
@@ -64,9 +66,22 @@ class Entry(object):
             self.error += ']'
 
     @staticmethod
-    def make(s, retry_times):
+    def get_valid_url(path, host):
+        url = urlparse.urljoin(host, path)
+        try:
+            p = urlparse.urlparse(url)
+        except Exception:
+            logging.error('invalid url:[%s]', url)
+            sys.exit(0)
+        if p.scheme not in ('http', 'https'):
+            logging.error('unsupported url:[%s]', url)
+            sys.exit(0)
+        return url
+
+    @staticmethod
+    def make(s, host, retry_times):
         l = s.split('|')
-        url = l[0]
+        url = Entry.get_valid_url(l[0], host)
         code = int(l[1]) if len(l) > 1 else 200
         keyword = l[2] if len(l) > 2 else ''
         retry_times = int(l[3]) if len(l) > 3 else retry_times
@@ -139,7 +154,8 @@ def main():
         with open(urls_file) as f:
             for line in f.read().splitlines():
                 if not line.startswith('#'):
-                    entries.append(Entry.make(line, options.retry_times))
+                    entry = Entry.make(line, options.host, options.retry_times)
+                    entries.append(entry)
     if not entries:
         sys.exit(0)
 
