@@ -22,7 +22,7 @@ from utils import setup_settings
 define('use_curl', type=bool, default=False, help='use pycurl as AsyncHTTPClient backend')
 define('max_clients', type=int, default=10, help='max concurrent clients')
 define('timeout', type=float, default=5.0, help='request timeout')
-define('host', default='http://localhost', help='host')
+define('hosts', default='http://localhost', help='hosts, separated by (,)')
 define('retry_times', type=int, default=3, help='retry times')
 define('follow_redirects', type=bool, default=True, help='request follow redirects')
 define('validate_cert', type=bool, default=True, help='request validate cert')
@@ -67,6 +67,14 @@ class Entry(object):
 
     @staticmethod
     def get_valid_url(path, host):
+        try:
+            p = urlparse.urlparse(host)
+        except Exception:
+            logging.error('invalid host:[%s]', host)
+            sys.exit(0)
+        if not p.scheme:
+            host = 'http://' + host
+
         url = urlparse.urljoin(host, path)
         try:
             p = urlparse.urlparse(url)
@@ -149,17 +157,18 @@ class Checker(object):
 
 
 def main():
-    entries = []
+    entries = {}
     for urls_file in urls_files:
         with open(urls_file) as f:
             for line in f.read().splitlines():
                 if not line.startswith('#'):
-                    entry = Entry.make(line, options.host, options.retry_times)
-                    entries.append(entry)
+                    for host in options.hosts.split(','):
+                        entry = Entry.make(line, host.strip(), options.retry_times)
+                        entries[entry.url] = entry
     if not entries:
         sys.exit(0)
 
-    bc = Checker(entries, options.timeout, options.max_clients)
+    bc = Checker(entries.values(), options.timeout, options.max_clients)
     bc.check()
 
 
