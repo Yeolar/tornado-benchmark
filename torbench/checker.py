@@ -67,13 +67,13 @@ class Entry(object):
 
     @staticmethod
     def get_valid_url(path, host):
+        if not host.startswith('http'):
+            host = 'http://' + host
         try:
             p = urlparse.urlparse(host)
         except Exception:
             logging.error('invalid host:[%s]', host)
             sys.exit(0)
-        if not p.scheme:
-            host = 'http://' + host
 
         url = urlparse.urljoin(host, path)
         try:
