@@ -20,6 +20,7 @@ from utils import setup_settings
 
 
 define('use_curl', type=bool, default=False, help='use pycurl as AsyncHTTPClient backend')
+define('multi_processes', type=int, default=-1, help='run as multi-processes, 0 for cpu count')
 define('max_clients', type=int, default=10, help='max concurrent clients')
 define('timeout', type=float, default=5.0, help='request timeout')
 define('hosts', default='http://localhost', help='hosts, separated by (,)')
@@ -101,6 +102,15 @@ class Checker(object):
     def __init__(self, entries, timeout, max_clients):
         assert entries
 
+        task_id = process.task_id()
+
+        if options.multi_processes == -1:
+            process_num = 1
+        elif options.multi_processes == 0:
+            process_num = process.cpu_count()
+        else:
+            process_num = options.multi_processes
+
         self._io_loop = ioloop.IOLoop()
         self._client = httpclient.AsyncHTTPClient(
                 self._io_loop, max_clients=max_clients)
@@ -108,7 +118,8 @@ class Checker(object):
         self.timeout = timeout
         self.max_clients = max_clients
         self.requests = dict([(self.get_request(e), e) for e in entries])
-        self.count = len(self.requests)
+        self.partial_requests = self.requests.keys()[task_id::process_num]
+        self.count = len(self.partial_requests)
 
     def get_request(self, entry):
         return httpclient.HTTPRequest(entry.url,
@@ -117,10 +128,11 @@ class Checker(object):
                 request_timeout=self.timeout)
 
     def check(self):
-        for request in self.requests:
-            self._client.fetch(request, self._on_response)
+        if self.partial_requests:
+            for request in self.partial_requests:
+                self._client.fetch(request, self._on_response)
 
-        self._io_loop.start()
+            self._io_loop.start()
 
     def _on_response(self, response):
         self.count -= 1
@@ -167,6 +179,9 @@ def main():
                         entries[entry.url] = entry
     if not entries:
         sys.exit(0)
+
+    if options.multi_processes != -1:
+        process.fork_processes(options.multi_processes)
 
     bc = Checker(entries.values(), options.timeout, options.max_clients)
     bc.check()
