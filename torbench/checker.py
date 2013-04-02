@@ -5,8 +5,6 @@
 #
 
 import sys
-import time
-import random
 import logging
 import urlparse
 
