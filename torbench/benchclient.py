@@ -31,8 +31,8 @@ define('log_info_format', help='info log format')
 define('log_warning_format', help='warning log format')
 define('log_error_format', help='error log format')
 
-requests = parse_command_line()
 parse_config_file(setup_settings())
+requests = parse_command_line()
 
 if options.use_curl:
     httpclient.AsyncHTTPClient.configure(

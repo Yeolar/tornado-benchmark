@@ -29,8 +29,8 @@ define('follow_redirects', type=bool, default=True, help='request follow redirec
 define('validate_cert', type=bool, default=True, help='request validate cert')
 define('checker_log_format', help='log format')
 
-urls_files = parse_command_line()
 parse_config_file(setup_settings())
+urls_files = parse_command_line()
 
 if options.use_curl:
     httpclient.AsyncHTTPClient.configure(
