@@ -28,8 +28,8 @@ define('max_clients', type=int, default=10, help='max concurrent clients')
 define('dpi', type=int, default=72, help='figure DPI')
 define('figure_file', default='log.png', help='figure file')
 
-log_files = parse_command_line()
 parse_config_file(setup_settings())
+log_files = parse_command_line()
 
 
 REGEX = re.compile(r'\[(?P<level>[IWE]) (?P<date>\d+) (?P<time>[\d:\.]+)'
